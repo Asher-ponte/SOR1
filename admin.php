@@ -621,7 +621,9 @@ validateAdminSession();
         function renderStatusChart(openCount, closedCount) {
         if (statusChartInstance) statusChartInstance.destroy();
 
-            const ctx = document.getElementById('statusChart').getContext('2d');
+            const statusCanvas = document.getElementById('statusChart');
+            if (!statusCanvas) return;
+            const ctx = statusCanvas.getContext('2d');
             statusChartInstance = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
@@ -663,7 +665,9 @@ validateAdminSession();
     function renderCategoryChart(categories) {
         if (categoryChartInstance) categoryChartInstance.destroy();
 
-            const ctx = document.getElementById('categoryChart').getContext('2d');
+            const categoryCanvas = document.getElementById('categoryChart');
+            if (!categoryCanvas) return;
+            const ctx = categoryCanvas.getContext('2d');
             categoryChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -671,12 +675,7 @@ validateAdminSession();
                     datasets: [{
                     label: 'Observations',
                     data: categories.map(c => c.count),
-                    backgroundColor: [
-                        '#0ea5e9',
-                        '#f59e0b',
-                        '#10b981',
-                        '#6366f1'
-                    ],
+                    backgroundColor: '#10b981',
                     borderRadius: 4
                     }]
                 },
@@ -686,9 +685,9 @@ validateAdminSession();
                 animation: {
                     duration: 0
                 },
-                plugins: {
-                    legend: { display: false }
-                },
+                    plugins: {
+                        legend: { display: false }
+                    },
                     scales: {
                         y: {
                             beginAtZero: true,
@@ -702,7 +701,9 @@ validateAdminSession();
     function renderLocationChart(locations) {
         if (locationChartInstance) locationChartInstance.destroy();
 
-            const ctx = document.getElementById('locationChart').getContext('2d');
+            const locationCanvas = document.getElementById('locationChart');
+            if (!locationCanvas) return;
+            const ctx = locationCanvas.getContext('2d');
             locationChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -755,7 +756,9 @@ validateAdminSession();
             if (t.observation_type === 'Unsafe Condition') data[0] = t.count;
             if (t.observation_type === 'Unsafe Act') data[1] = t.count;
         });
-        const ctx = document.getElementById('observationTypeChart').getContext('2d');
+        const observationTypeCanvas = document.getElementById('observationTypeChart');
+        if (!observationTypeCanvas) return;
+        const ctx = observationTypeCanvas.getContext('2d');
         observationTypeChartInstance = new Chart(ctx, {
             type: 'doughnut',
             data: {
@@ -794,9 +797,12 @@ validateAdminSession();
     function renderUserLineChart(usernames) {
         if (userLineChartInstance) userLineChartInstance.destroy();
         if (!usernames || usernames.length === 0) return;
+        // Ensure canvas exists
+        const canvas = document.getElementById('userLineChart');
+        if (!canvas) return;
         // Sort and get top 5 users
         const topUsers = [...usernames].sort((a, b) => b.count - a.count).slice(0, 5);
-        const ctx = document.getElementById('userLineChart').getContext('2d');
+        const ctx = canvas.getContext('2d');
         userLineChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
@@ -819,16 +825,7 @@ validateAdminSession();
                 animation: { duration: 0 },
                 plugins: {
                     legend: { display: false },
-                    title: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.label}: ${context.parsed.y}`;
-                            }
-                        }
-                    }
+                    tooltip: { enabled: true }
                 },
                 scales: {
                     y: {
@@ -857,7 +854,9 @@ validateAdminSession();
         if (!locationsStatus || locationsStatus.length === 0) return;
         // Sort by total (open + closed) descending
         const sorted = [...locationsStatus].sort((a, b) => (parseInt(b.open) + parseInt(b.closed)) - (parseInt(a.open) + parseInt(a.closed)));
-        const ctx = document.getElementById('locationStatusChart').getContext('2d');
+        const locationStatusCanvas = document.getElementById('locationStatusChart');
+        if (!locationStatusCanvas) return;
+        const ctx = locationStatusCanvas.getContext('2d');
         locationStatusChartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -865,13 +864,13 @@ validateAdminSession();
                 datasets: [
                     {
                         label: 'Open',
-                        data: sorted.map(l => l.open),
-                        backgroundColor: '#f87171',
+                        data: sorted.map(l => parseInt(l.open)),
+                        backgroundColor: '#f59e0b'
                     },
                     {
                         label: 'Closed',
-                        data: sorted.map(l => l.closed),
-                        backgroundColor: '#34d399',
+                        data: sorted.map(l => parseInt(l.closed)),
+                        backgroundColor: '#22c55e'
                     }
                 ]
             },
@@ -879,24 +878,9 @@ validateAdminSession();
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: { duration: 0 },
-                plugins: {
-                    legend: { position: 'bottom' },
-                    title: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.dataset.label}: ${context.parsed.y}`;
-                            }
-                        }
-                    }
-                },
+                plugins: { legend: { position: 'bottom' } },
                 scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { precision: 0 }
-                    }
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
                 }
             }
         });
@@ -962,24 +946,24 @@ validateAdminSession();
     }
     function renderSORDailyChart(labels, counts) {
         if (sorDailyChartInstance) sorDailyChartInstance.destroy();
-        const ctx = document.getElementById('sorDailyChart').getContext('2d');
+        const dailyCanvas = document.getElementById('sorDailyChart');
+        if (!dailyCanvas) return;
+        const ctx = dailyCanvas.getContext('2d');
         sorDailyChartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'SOR Reports',
+                    label: 'Reports',
                     data: counts,
-                    backgroundColor: '#0ea5e9',
+                    backgroundColor: '#f43f5e',
                     borderRadius: 6
                 }]
             },
             options: {
                 responsive: true,
-                plugins: {
-                    legend: { display: false },
-                    title: { display: false }
-                },
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
                 scales: {
                     y: { beginAtZero: true, ticks: { precision: 0 } }
                 }
@@ -999,7 +983,9 @@ validateAdminSession();
     }
     function renderSORWeeklyDeptChart(departments, deptData, weekStart, weekEnd) {
         if (sorWeeklyDeptChartInstance) sorWeeklyDeptChartInstance.destroy();
-        const ctx = document.getElementById('sorWeeklyDeptChart').getContext('2d');
+        const weeklyDeptCanvas = document.getElementById('sorWeeklyDeptChart');
+        if (!weeklyDeptCanvas) return;
+        const ctx = weeklyDeptCanvas.getContext('2d');
         // Sort departments by count descending
         const deptCounts = departments.map(dept => ({ dept, count: deptData[dept] || 0 }));
         deptCounts.sort((a, b) => b.count - a.count);
@@ -1010,7 +996,7 @@ validateAdminSession();
             data: {
                 labels: sortedDepartments,
                 datasets: [{
-                    label: 'Weekly SOR by Department',
+                    label: 'Reports',
                     data: sortedCounts,
                     backgroundColor: '#0ea5e9',
                     borderRadius: 6
@@ -1018,13 +1004,9 @@ validateAdminSession();
             },
             options: {
                 responsive: true,
-                plugins: {
-                    legend: { display: false },
-                    title: { display: false },
-                    tooltip: { mode: 'index', intersect: false }
-                },
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false }, title: { display: false } },
                 scales: {
-                    x: { },
                     y: { beginAtZero: true, ticks: { precision: 0 } }
                 }
             }
@@ -1043,16 +1025,18 @@ validateAdminSession();
     }
     function renderSORWeeklyTrendChart(labels, counts) {
         if (sorWeeklyTrendChartInstance) sorWeeklyTrendChartInstance.destroy();
-        const ctx = document.getElementById('sorWeeklyTrendChart').getContext('2d');
+        const weeklyTrendCanvas = document.getElementById('sorWeeklyTrendChart');
+        if (!weeklyTrendCanvas) return;
+        const ctx = weeklyTrendCanvas.getContext('2d');
         sorWeeklyTrendChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'SOR Reports',
+                    label: 'Reports',
                     data: counts,
-                    backgroundColor: '#0ea5e9',
                     borderColor: '#0ea5e9',
+                    backgroundColor: 'rgba(14,165,233,0.1)',
                     fill: false,
                     tension: 0.3,
                     pointRadius: 5
@@ -1060,10 +1044,8 @@ validateAdminSession();
             },
             options: {
                 responsive: true,
-                plugins: {
-                    legend: { display: false },
-                    title: { display: false }
-                },
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
                 scales: {
                     y: { beginAtZero: true, ticks: { precision: 0 } }
                 }
@@ -1083,7 +1065,9 @@ validateAdminSession();
     }
     function renderTop7OpenByAssigneeChart(labels, counts) {
         if (top7OpenByAssigneeChartInstance) top7OpenByAssigneeChartInstance.destroy();
-        const ctx = document.getElementById('top7OpenByAssigneeChart').getContext('2d');
+        const topAssigneeCanvas = document.getElementById('top7OpenByAssigneeChart');
+        if (!topAssigneeCanvas) return;
+        const ctx = topAssigneeCanvas.getContext('2d');
         top7OpenByAssigneeChartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -1091,19 +1075,15 @@ validateAdminSession();
                 datasets: [{
                     label: 'Open Items',
                     data: counts,
-                    backgroundColor: '#f43f5e', // Red
+                    backgroundColor: '#f59e0b',
                     borderRadius: 6
                 }]
             },
             options: {
                 responsive: true,
-                plugins: {
-                    legend: { display: false },
-                    title: { display: false },
-                    tooltip: { mode: 'index', intersect: false }
-                },
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
                 scales: {
-                    x: { },
                     y: { beginAtZero: true, ticks: { precision: 0 } }
                 }
             }
@@ -1122,7 +1102,9 @@ validateAdminSession();
     }
     function renderDaysOpenChart(labels, counts) {
         if (daysOpenChartInstance) daysOpenChartInstance.destroy();
-        const ctx = document.getElementById('daysOpenChart').getContext('2d');
+        const daysOpenCanvas = document.getElementById('daysOpenChart');
+        if (!daysOpenCanvas) return;
+        const ctx = daysOpenCanvas.getContext('2d');
         daysOpenChartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -1159,7 +1141,9 @@ validateAdminSession();
     }
     function renderTop5DescriptionChart(labels, counts) {
         if (top5DescriptionChartInstance) top5DescriptionChartInstance.destroy();
-        const ctx = document.getElementById('top5DescriptionChart').getContext('2d');
+        const top5Canvas = document.getElementById('top5DescriptionChart');
+        if (!top5Canvas) return;
+        const ctx = top5Canvas.getContext('2d');
         top5DescriptionChartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -1208,7 +1192,12 @@ validateAdminSession();
     }
     function renderMonthlyObservationChart(labels, counts) {
         if (monthlyObservationChartInstance) monthlyObservationChartInstance.destroy();
-        const ctx = document.getElementById('monthlyObservationChart').getContext('2d');
+        const canvas = document.getElementById('monthlyObservationChart');
+        if (!canvas) return;
+        const maxVal = Math.max(0, ...counts);
+        const desiredTicks = 8;
+        const computedStep = Math.max(1, Math.ceil(maxVal / desiredTicks));
+        const ctx = canvas.getContext('2d');
         monthlyObservationChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
@@ -1231,7 +1220,14 @@ validateAdminSession();
                 plugins: { legend: { display: false }, tooltip: { enabled: true } },
                 elements: { point: { radius: 4 } },
                 scales: {
-                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0,
+                            stepSize: computedStep,
+                            maxTicksLimit: desiredTicks + 1
+                        }
+                    }
                 }
             }
         });
