@@ -1180,9 +1180,10 @@ validateAdminSession();
         });
     }
     // Fetch and render Monthly Observations (Jan-Dec)
-    async function fetchAndRenderMonthlyObservationChart(departmentId = 'all') {
+    async function fetchAndRenderMonthlyObservationChart(departmentId = undefined) {
         try {
-            const res = await fetch(`api.php?action=get_monthly_observation_trend&department_id=${departmentId}`, { credentials: 'include' });
+            const effectiveDepartmentId = departmentId ?? (document.getElementById('department-filter')?.value || 'all');
+            const res = await fetch(`api.php?action=get_monthly_observation_trend&department_id=${effectiveDepartmentId}`, { credentials: 'include' });
             const data = await res.json();
             if (!data.success) throw new Error(data.message);
             renderMonthlyObservationChart(data.labels, data.data);
@@ -1232,14 +1233,7 @@ validateAdminSession();
             }
         });
     }
-    // Call these after dashboard loads
-    fetchAndRenderSORDaily();
-    fetchAndRenderSORWeeklyDept();
-    fetchAndRenderSORWeeklyTrend();
-    fetchAndRenderTop7OpenByAssignee();
-    fetchAndRenderDaysOpenChart();
-    fetchAndRenderTop5DescriptionChart();
-    fetchAndRenderMonthlyObservationChart();
+    // Chart fetch calls are invoked by fetchDashboardData(departmentId) after session check and on filter changes.
     </script>
 </body>
 </html>
