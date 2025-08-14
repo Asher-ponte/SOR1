@@ -1916,14 +1916,50 @@ function getDaysOpenDistribution($conn) {
         ['label' => '61+ days', 'min' => 61, 'max' => 10000]
     ];
     $counts = array_fill(0, count($bins), 0);
-    $sql = "SELECT timestamp, DATEDIFF(CURDATE(), DATE(timestamp)) as days_open FROM observations WHERE status = 'Open'";
-    $result = $conn->query($sql);
-    if (!$result) {
+
+    $department_id = $_GET['department_id'] ?? 'all';
+    $where_clause = " WHERE status = 'Open'";
+    $params = [];
+    $types = '';
+
+    if ($department_id !== 'all') {
+        $stmt = $conn->prepare("SELECT name FROM departments WHERE id = ?");
+        if ($stmt) {
+            $stmt->bind_param("i", $department_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($result && $result->num_rows > 0) {
+                $department_name = $result->fetch_assoc()['name'];
+                $where_clause .= ' AND location = ?';
+                $params[] = $department_name;
+                $types .= 's';
+            }
+            $stmt->close();
+        }
+    }
+
+    $sql = "SELECT timestamp, DATEDIFF(CURDATE(), DATE(timestamp)) as days_open FROM observations" . $where_clause;
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
         ob_end_clean();
         header('Content-Type: application/json');
         echo json_encode(['success' => false, 'message' => $conn->error]);
         return;
     }
+
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+
+    if (!$stmt->execute()) {
+        $stmt->close();
+        ob_end_clean();
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => $conn->error]);
+        return;
+    }
+
+    $result = $stmt->get_result();
     while ($row = $result->fetch_assoc()) {
         $days = (int)$row['days_open'];
         foreach ($bins as $i => $bin) {
@@ -1933,6 +1969,8 @@ function getDaysOpenDistribution($conn) {
             }
         }
     }
+    $stmt->close();
+
     ob_end_clean();
     header('Content-Type: application/json');
     echo json_encode([
