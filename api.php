@@ -1944,24 +1944,64 @@ function getDaysOpenDistribution($conn) {
 
 // --- Top 5 Observation Descriptions ---
 function getTop5ObservationDescriptions($conn) {
-    $sql = "SELECT description, COUNT(*) as cnt FROM observations GROUP BY description ORDER BY cnt DESC LIMIT 5";
-    $result = $conn->query($sql);
-    if (!$result) {
+    $department_id = $_GET['department_id'] ?? 'all';
+    $where_clause = '';
+    $params = [];
+    $types = '';
+
+    if ($department_id !== 'all') {
+        $stmt = $conn->prepare("SELECT name FROM departments WHERE id = ?");
+        if (!$stmt) {
+            ob_end_clean();
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Database error.']);
+            return;
+        }
+        $stmt->bind_param("i", $department_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result && $result->num_rows > 0) {
+            $department_name = $result->fetch_assoc()['name'];
+            $where_clause = ' WHERE location = ?';
+            $params[] = $department_name;
+            $types .= 's';
+        }
+        $stmt->close();
+    }
+
+    $sql = "SELECT description, COUNT(*) as cnt FROM observations" . $where_clause . " GROUP BY description ORDER BY cnt DESC LIMIT 5";
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
         ob_end_clean();
         header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'message' => $conn->error]);
+        echo json_encode(['success' => false, 'message' => 'Database error.']);
         return;
     }
+
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+
+    if (!$stmt->execute()) {
+        ob_end_clean();
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'Database error.']);
+        return;
+    }
+
+    $result = $stmt->get_result();
     $labels = [];
     $counts = [];
     while ($row = $result->fetch_assoc()) {
-        $desc = $row['description'];
+        $desc = $row['description'] ?? '';
         if (mb_strlen($desc) > 45) {
             $desc = mb_substr($desc, 0, 42) . '...';
         }
         $labels[] = $desc;
         $counts[] = (int)$row['cnt'];
     }
+    $stmt->close();
+
     ob_end_clean();
     header('Content-Type: application/json');
     echo json_encode([
