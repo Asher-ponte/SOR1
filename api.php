@@ -1543,13 +1543,53 @@ function getSORWeeklyTrendCurrentMonth($conn) {
 // Add new function for get_top7_open_by_assignee
 function getTop7OpenByAssignee($conn) {
     try {
+        $department_id = $_GET['department_id'] ?? 'all';
+        $where_clause = "WHERE status = 'Open' AND assign_to IS NOT NULL AND assign_to != ''";
+        $params = [];
+        $types = '';
+
+        if ($department_id !== 'all') {
+            $stmt = $conn->prepare("SELECT name FROM departments WHERE id = ?");
+            if (!$stmt) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Database error.']);
+                return;
+            }
+            $stmt->bind_param("i", $department_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($result->num_rows > 0) {
+                $department_name = $result->fetch_assoc()['name'];
+                $where_clause .= ' AND location = ?';
+                $params[] = $department_name;
+                $types .= 's';
+            }
+            $stmt->close();
+        }
+
+        $sql = "SELECT assign_to, COUNT(*) as cnt FROM observations " . $where_clause . " GROUP BY assign_to ORDER BY cnt DESC LIMIT 10";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Database error.']);
+            return;
+        }
+
+        if (!empty($params)) {
+            $stmt->bind_param($types, ...$params);
+        }
+
+        $stmt->execute();
+        $result = $stmt->get_result();
+
         $labels = [];
         $counts = [];
-        $result = $conn->query("SELECT assign_to, COUNT(*) as cnt FROM observations WHERE status = 'Open' AND assign_to IS NOT NULL AND assign_to != '' GROUP BY assign_to ORDER BY cnt DESC LIMIT 10");
         while ($row = $result->fetch_assoc()) {
             $labels[] = $row['assign_to'];
-            $counts[] = (int)$row['cnt'];
+            $counts[] = (int) $row['cnt'];
         }
+        $stmt->close();
+
         header('Content-Type: application/json');
         echo json_encode(['success' => true, 'labels' => $labels, 'data' => $counts]);
     } catch (Exception $e) {
